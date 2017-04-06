@@ -1,10 +1,11 @@
 import html
-import random
-import numpy as np
 import tensorflow as tf
 
+
 def find_trainable_variables(key):
-    return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, ".*{}.*".format(key))
+    return tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, ".*{}.*".format(key))
+
 
 def preprocess(text, front_pad='\n ', end_pad=' '):
     text = html.unescape(text)
@@ -12,6 +13,7 @@ def preprocess(text, front_pad='\n ', end_pad=' '):
     text = front_pad+text+end_pad
     text = text.encode()
     return text
+
 
 def iter_data(*data, **kwargs):
     size = kwargs.get('size', 128)
@@ -32,6 +34,7 @@ def iter_data(*data, **kwargs):
             yield data[0][start:end]
         else:
             yield tuple([d[start:end] for d in data])
+
 
 class HParams(object):
 
