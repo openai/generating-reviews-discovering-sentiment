@@ -110,7 +110,7 @@ class Model(object):
     def __init__(self, nbatch=128, nsteps=64):
         global hps
         hps = HParams(
-            load_path='model/params.jl',
+            load_path='model_params/params.jl',
             nhidden=4096,
             nembd=64,
             nsteps=nsteps,
@@ -123,7 +123,9 @@ class Model(object):
             embd_wn=True,
         )
         global params
-        params = joblib.load(hps.load_path)
+        params = [np.load('model/%d.npy'%i) for i in range(15)]
+        params[2] = np.concatenate(params[2:6], axis=1)
+        params[3:6] = []
 
         X = tf.placeholder(tf.int32, [None, hps.nsteps])
         M = tf.placeholder(tf.float32, [None, hps.nsteps, 1])
