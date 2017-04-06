@@ -1,26 +1,29 @@
-import os
 import time
-import string
 import numpy as np
 import tensorflow as tf
 
 from tqdm import tqdm
 from sklearn.externals import joblib
 
-from utils import HParams, find_trainable_variables, preprocess, iter_data
+from utils import HParams, preprocess, iter_data
 
 global nloaded
 nloaded = 0
+
+
 def load_params(shape, dtype, *args, **kwargs):
     global nloaded
     nloaded += 1
-    return params[nloaded-1]
+    return params[nloaded - 1]
+
 
 def embd(X, ndim, scope='embedding'):
     with tf.variable_scope(scope):
-        embd = tf.get_variable("w", [hps.nvocab, ndim], initializer=load_params)
+        embd = tf.get_variable(
+            "w", [hps.nvocab, ndim], initializer=load_params)
         h = tf.nn.embedding_lookup(embd, X)
         return h
+
 
 def fc(x, nout, act, wn=False, bias=True, scope='fc'):
     with tf.variable_scope(scope):
@@ -29,7 +32,7 @@ def fc(x, nout, act, wn=False, bias=True, scope='fc'):
         if wn:
             g = tf.get_variable("g", [nout], initializer=load_params)
         if wn:
-            w = tf.nn.l2_normalize(w, dim=0)*g
+            w = tf.nn.l2_normalize(w, dim=0) * g
         z = tf.matmul(x, w)
         if bias:
             b = tf.get_variable("b", [nout], initializer=load_params)
@@ -37,25 +40,26 @@ def fc(x, nout, act, wn=False, bias=True, scope='fc'):
         h = act(z)
         return h
 
+
 def mlstm(inputs, c, h, M, ndim, scope='lstm', wn=False):
     nin = inputs[0].get_shape()[1].value
     with tf.variable_scope(scope):
-        wx = tf.get_variable("wx", [nin, ndim*4], initializer=load_params)
-        wh = tf.get_variable("wh", [ndim, ndim*4], initializer=load_params)
+        wx = tf.get_variable("wx", [nin, ndim * 4], initializer=load_params)
+        wh = tf.get_variable("wh", [ndim, ndim * 4], initializer=load_params)
         wmx = tf.get_variable("wmx", [nin, ndim], initializer=load_params)
         wmh = tf.get_variable("wmh", [ndim, ndim], initializer=load_params)
-        b = tf.get_variable("b", [ndim*4], initializer=load_params)
+        b = tf.get_variable("b", [ndim * 4], initializer=load_params)
         if wn:
-            gx = tf.get_variable("gx", [ndim*4], initializer=load_params)
-            gh = tf.get_variable("gh", [ndim*4], initializer=load_params)
+            gx = tf.get_variable("gx", [ndim * 4], initializer=load_params)
+            gh = tf.get_variable("gh", [ndim * 4], initializer=load_params)
             gmx = tf.get_variable("gmx", [ndim], initializer=load_params)
             gmh = tf.get_variable("gmh", [ndim], initializer=load_params)
 
     if wn:
-        wx = tf.nn.l2_normalize(wx, dim=0)*gx
-        wh = tf.nn.l2_normalize(wh, dim=0)*gh
-        wmx = tf.nn.l2_normalize(wmx, dim=0)*gmx
-        wmh = tf.nn.l2_normalize(wmh, dim=0)*gmh
+        wx = tf.nn.l2_normalize(wx, dim=0) * gx
+        wh = tf.nn.l2_normalize(wh, dim=0) * gh
+        wmx = tf.nn.l2_normalize(wmx, dim=0) * gmx
+        wmh = tf.nn.l2_normalize(wmh, dim=0) * gmh
 
     cs = []
     for idx, x in enumerate(inputs):
@@ -80,20 +84,25 @@ def mlstm(inputs, c, h, M, ndim, scope='lstm', wn=False):
     cs = tf.pack(cs)
     return inputs, cs, c, h
 
+
 def model(X, S, M=None, reuse=False):
     nsteps = X.get_shape()[1]
     cstart, hstart = tf.unpack(S, num=hps.nstates)
     with tf.variable_scope('model', reuse=reuse):
         words = embd(X, hps.nembd)
         inputs = [tf.squeeze(v, [1]) for v in tf.split(1, nsteps, words)]
-        hs, cells, cfinal, hfinal = mlstm(inputs, cstart, hstart, M, hps.nhidden, scope='rnn', wn=hps.rnn_wn)
+        hs, cells, cfinal, hfinal = mlstm(
+            inputs, cstart, hstart, M, hps.nhidden, scope='rnn', wn=hps.rnn_wn)
         hs = tf.reshape(tf.concat(1, hs), [-1, hps.nhidden])
-        logits = fc(hs, hps.nvocab, act=lambda x:x, wn=hps.out_wn, scope='out')
+        logits = fc(
+            hs, hps.nvocab, act=lambda x: x, wn=hps.out_wn, scope='out')
     states = tf.pack([cfinal, hfinal], 0)
     return cells, states, logits
 
+
 def ceil_round_step(n, step):
     return int(np.ceil(n/step)*step)
+
 
 def batch_pad(xs, nbatch, nsteps):
     xmb = np.zeros((nbatch, nsteps), dtype=np.int32)
@@ -104,6 +113,7 @@ def batch_pad(xs, nbatch, nsteps):
         xmb[i, -l:] = list(x)
         mmb[i, :npad] = 0
     return xmb, mmb
+
 
 class Model(object):
 
@@ -136,10 +146,10 @@ class Model(object):
         tf.initialize_all_variables().run(session=sess)
 
         def seq_rep(xmb, mmb, smb):
-            return sess.run(states, {X:xmb, M:mmb, S:smb})
+            return sess.run(states, {X: xmb, M: mmb, S: smb})
 
         def seq_cells(xmb, mmb, smb):
-            return sess.run(cells, {X:xmb, M:mmb, S:smb})
+            return sess.run(cells, {X: xmb, M: mmb, S: smb})
 
         def transform(xs):
             tstart = time.time()
@@ -147,7 +157,6 @@ class Model(object):
             lens = np.asarray([len(x) for x in xs])
             sorted_idxs = np.argsort(lens)
             unsort_idxs = np.argsort(sorted_idxs)
-            sorted_lens = lens[sorted_idxs]
             sorted_xs = [xs[i] for i in sorted_idxs]
             maxlen = np.max(lens)
             offset = 0
@@ -166,20 +175,25 @@ class Model(object):
                 for batch in range(0, nsubseq, nbatch):
                     start = batch
                     end = batch+nbatch
-                    batch_smb = seq_rep(xmb[start:end], mmb[start:end], smb[:, offset+start:offset+end, :])
+                    batch_smb = seq_rep(
+                        xmb[start:end], mmb[start:end],
+                        smb[:, offset+start:offset+end, :])
                     smb[:, offset+start:offset+end, :] = batch_smb
             features = smb[0, unsort_idxs, :]
-            print('%0.3f seconds to transform %d examples'%(time.time()-tstart, n))
+            print('%0.3f seconds to transform %d examples' %
+                  (time.time() - tstart, n))
             return features
 
         def cell_transform(xs, indexes=None):
             Fs = []
             xs = [preprocess(x) for x in xs]
-            for xmb in tqdm(iter_data(xs, size=hps.nbatch), ncols=80, leave=False, total=len(xs)//hps.nbatch):
+            for xmb in tqdm(
+                    iter_data(xs, size=hps.nbatch), ncols=80, leave=False,
+                    total=len(xs)//hps.nbatch):
                 smb = np.zeros((2, hps.nbatch, hps.nhidden))
                 n = len(xmb)
                 xmb, mmb = batch_pad(xmb, hps.nbatch, hps.nsteps)
-                smb = sess.run(cells, {X:xmb, S:smb, M:mmb})
+                smb = sess.run(cells, {X: xmb, S: smb, M: mmb})
                 smb = smb[:, :n, :]
                 if indexes is not None:
                     smb = smb[:, :, indexes]
@@ -190,8 +204,9 @@ class Model(object):
         self.transform = transform
         self.cell_transform = cell_transform
 
+
 if __name__ == '__main__':
-    model = Model()
+    mdl = Model()
     text = ['demo!']
-    text_features = model.transform(text)
+    text_features = mdl.transform(text)
     print(text_features.shape)
