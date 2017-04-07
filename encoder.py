@@ -65,7 +65,7 @@ def mlstm(inputs, c, h, M, ndim, scope='lstm', wn=False):
     for idx, x in enumerate(inputs):
         m = tf.matmul(x, wmx)*tf.matmul(h, wmh)
         z = tf.matmul(x, wx) + tf.matmul(m, wh) + b
-        i, f, o, u = tf.split(1, 4, z)
+        i, f, o, u = tf.split(axis=1, num_or_size_splits=4, value=z)
         i = tf.nn.sigmoid(i)
         f = tf.nn.sigmoid(f)
         o = tf.nn.sigmoid(o)
@@ -81,22 +81,22 @@ def mlstm(inputs, c, h, M, ndim, scope='lstm', wn=False):
             h = o*tf.tanh(c)
         inputs[idx] = h
         cs.append(c)
-    cs = tf.pack(cs)
+    cs = tf.stack(cs)
     return inputs, cs, c, h
 
 
 def model(X, S, M=None, reuse=False):
-    nsteps = X.get_shape()[1]
-    cstart, hstart = tf.unpack(S, num=hps.nstates)
+    nsteps = X.get_shape()[1].value
+    cstart, hstart = tf.unstack(S, num=hps.nstates)
     with tf.variable_scope('model', reuse=reuse):
         words = embd(X, hps.nembd)
-        inputs = [tf.squeeze(v, [1]) for v in tf.split(1, nsteps, words)]
+        inputs = [tf.squeeze(v, [1]) for v in tf.split(axis=1, num_or_size_splits=nsteps, value=words)]
         hs, cells, cfinal, hfinal = mlstm(
             inputs, cstart, hstart, M, hps.nhidden, scope='rnn', wn=hps.rnn_wn)
-        hs = tf.reshape(tf.concat(1, hs), [-1, hps.nhidden])
+        hs = tf.reshape(tf.concat(axis=1, values=hs), [-1, hps.nhidden])
         logits = fc(
             hs, hps.nvocab, act=lambda x: x, wn=hps.out_wn, scope='out')
-    states = tf.pack([cfinal, hfinal], 0)
+    states = tf.stack([cfinal, hfinal], 0)
     return cells, states, logits
 
 
@@ -110,7 +110,8 @@ def batch_pad(xs, nbatch, nsteps):
     for i, x in enumerate(xs):
         l = len(x)
         npad = nsteps-l
-        xmb[i, -l:] = list(x)
+        #print x, xmb, list(x),i,l
+        xmb[i, -l:] = [ord(c) for c in list(x)]
         mmb[i, :npad] = 0
     return xmb, mmb
 
@@ -143,7 +144,7 @@ class Model(object):
         cells, states, logits = model(X, S, M, reuse=False)
 
         sess = tf.Session()
-        tf.initialize_all_variables().run(session=sess)
+        tf.global_variables_initializer().run(session=sess)
 
         def seq_rep(xmb, mmb, smb):
             return sess.run(states, {X: xmb, M: mmb, S: smb})
@@ -172,6 +173,7 @@ class Model(object):
                 sorted_xs = sorted_xs[ndone:]
                 nsubseq = len(xsubseq)
                 xmb, mmb = batch_pad(xsubseq, nsubseq, nsteps)
+                print "iterating through each batch for step", step
                 for batch in range(0, nsubseq, nbatch):
                     start = batch
                     end = batch+nbatch
@@ -179,6 +181,7 @@ class Model(object):
                         xmb[start:end], mmb[start:end],
                         smb[:, offset+start:offset+end, :])
                     smb[:, offset+start:offset+end, :] = batch_smb
+                print "done with batch iteration"
             features = smb[0, unsort_idxs, :]
             print('%0.3f seconds to transform %d examples' %
                   (time.time() - tstart, n))

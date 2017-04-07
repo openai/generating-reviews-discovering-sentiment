@@ -1,6 +1,6 @@
 import html
 import tensorflow as tf
-
+import HTMLParser
 
 def find_trainable_variables(key):
     return tf.get_collection(
@@ -8,8 +8,8 @@ def find_trainable_variables(key):
 
 
 def preprocess(text, front_pad='\n ', end_pad=' '):
-    text = html.unescape(text)
-    text = text.replace('\n', ' ').strip()
+    text = HTMLParser.HTMLParser().unescape(text)
+    text = text.replace('\n', ' ').replace('\\n', ' ').strip()
     text = front_pad+text+end_pad
     text = text.encode()
     return text
