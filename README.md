@@ -11,4 +11,5 @@ from encoder import Model
 model = Model()
 text = ['demo!']
 text_features = model.transform(text)
+sentiment = text_features[:, 2388]
 ```
