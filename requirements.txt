@@ -1,0 +1,5 @@
+numpy
+tensorflow == 0.12.1
+tqdm
+scipy
+scikit-learn
