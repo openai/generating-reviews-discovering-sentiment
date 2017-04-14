@@ -201,8 +201,23 @@ class Model(object):
             Fs = np.concatenate(Fs, axis=1).transpose(1, 0, 2)
             return Fs
 
+        def sequence_features(x, index):
+            x = preprocess(x)
+            n = len(x)
+            smb = np.zeros((2, 1, hps.nhidden))
+            fs = []
+            for step in range(0, ceil_round_step(n, nsteps), nsteps):
+                start = step
+                end = step+nsteps
+                xsubseq = x[start:end]
+                xmb, mmb = batch_pad([xsubseq], 1, nsteps)
+                seq_c, smb = sess.run([cells, states], {X: xmb, S: smb, M: mmb})
+                fs.append(seq_c[-len(xsubseq):, 0, index])
+            return np.concatenate(fs)
+
         self.transform = transform
         self.cell_transform = cell_transform
+        self.sequence_features = sequence_features
 
 
 if __name__ == '__main__':
@@ -210,3 +225,4 @@ if __name__ == '__main__':
     text = ['demo!']
     text_features = mdl.transform(text)
     print(text_features.shape)
+
