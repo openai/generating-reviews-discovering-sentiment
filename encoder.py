@@ -202,6 +202,25 @@ class Model(object):
             return Fs
         
         def generate_sequence(x_start, override={}, sampling = 0, len_add = '.'):
+            """Continue a given sequence. 
+
+            Args:
+                x_start (string): The string to be continued.
+                override (dict): Values of the hidden state to override
+                  with keys of the dictionary as index.          
+                sampling (int): 0 greedy argmax, 2 weighted random from probabilty 
+                  distribution, 1 weighted but only once after each word.
+                len_add (int, string, None): 
+                  If int, the number of characters to be added.
+                  If string, returns after each contained character was seen once.
+
+            Returns:
+                The completed string including transformation and paddings from preprocessing.
+
+            Example:
+                generate_sequence("I couldn’t figure out", override= {2388 : 1.0})
+            """
+            
             len_start = len(x_start)
             x = bytearray(preprocess(x_start))
 
