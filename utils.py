@@ -11,7 +11,7 @@ def preprocess(text, front_pad='\n ', end_pad=' '):
     text = HTMLParser.HTMLParser().unescape(text)
     text = text.replace('\n', ' ').replace('\\n', ' ').strip()
     text = front_pad+text+end_pad
-    text = text.encode()
+    text = text.encode('utf-8')
     return text
 
 
