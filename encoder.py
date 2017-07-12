@@ -65,7 +65,7 @@ def mlstm(inputs, c, h, M, ndim, scope='lstm', wn=False):
     for idx, x in enumerate(inputs):
         m = tf.matmul(x, wmx)*tf.matmul(h, wmh)
         z = tf.matmul(x, wx) + tf.matmul(m, wh) + b
-        i, f, o, u = tf.split(1, 4, z)
+        i, f, o, u = tf.split(z, 4, 1)
         i = tf.nn.sigmoid(i)
         f = tf.nn.sigmoid(f)
         o = tf.nn.sigmoid(o)
@@ -81,22 +81,22 @@ def mlstm(inputs, c, h, M, ndim, scope='lstm', wn=False):
             h = o*tf.tanh(c)
         inputs[idx] = h
         cs.append(c)
-    cs = tf.pack(cs)
+    cs = tf.stack(cs)
     return inputs, cs, c, h
 
 
 def model(X, S, M=None, reuse=False):
     nsteps = X.get_shape()[1]
-    cstart, hstart = tf.unpack(S, num=hps.nstates)
+    cstart, hstart = tf.unstack(S, num=hps.nstates)
     with tf.variable_scope('model', reuse=reuse):
         words = embd(X, hps.nembd)
-        inputs = [tf.squeeze(v, [1]) for v in tf.split(1, nsteps, words)]
+        inputs = tf.unstack(words, nsteps, 1)
         hs, cells, cfinal, hfinal = mlstm(
             inputs, cstart, hstart, M, hps.nhidden, scope='rnn', wn=hps.rnn_wn)
-        hs = tf.reshape(tf.concat(1, hs), [-1, hps.nhidden])
+        hs = tf.reshape(tf.concat(hs, 1), [-1, hps.nhidden])
         logits = fc(
             hs, hps.nvocab, act=lambda x: x, wn=hps.out_wn, scope='out')
-    states = tf.pack([cfinal, hfinal], 0)
+    states = tf.stack([cfinal, hfinal], 0)
     return cells, states, logits
 
 
@@ -143,7 +143,7 @@ class Model(object):
         cells, states, logits = model(X, S, M, reuse=False)
 
         sess = tf.Session()
-        tf.initialize_all_variables().run(session=sess)
+        tf.global_variables_initializer().run(session=sess)
 
         def seq_rep(xmb, mmb, smb):
             return sess.run(states, {X: xmb, M: mmb, S: smb})
