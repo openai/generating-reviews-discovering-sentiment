@@ -12,6 +12,7 @@ from encoder import Model
 model = Model()
 text = ['demo!']
 text_features = model.transform(text)
+sentiment = text_features[:, 2388]
 ```
 
 A demo of using the features for sentiment classification as reported in the paper for the binary version of the Stanford Sentiment Treebank (SST) is included as `sst_binary_demo.py`. Additionally this demo visualizes the distribution of the sentiment unit like Figure 3 in the paper.
