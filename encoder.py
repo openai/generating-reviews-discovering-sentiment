@@ -118,6 +118,9 @@ def batch_pad(xs, nbatch, nsteps):
 class Model(object):
 
     def __init__(self, nbatch=128, nsteps=64):
+        global nloaded
+        nloaded = 0
+        
         global hps
         hps = HParams(
             load_path='model_params/params.jl',
