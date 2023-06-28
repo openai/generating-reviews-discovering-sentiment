@@ -17,12 +17,16 @@
     <option name="stateVersion" value="1" />
   </component>
   <component name="ProjectId" id="2RnocYPfNxjOfl7mcfW4D0AXKk5" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
@@ -43,11 +47,14 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1687895290740</updated>
-      <workItem from="1687895291393" duration="1726000" />
+      <workItem from="1687895291393" duration="2043000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
   </component>
 </project>
