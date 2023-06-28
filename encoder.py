@@ -7,6 +7,8 @@ from sklearn.externals import joblib
 
 from utils import HParams, preprocess, iter_data
 
+
+
 global nloaded
 nloaded = 0
 
@@ -203,6 +205,64 @@ class Model(object):
 
         self.transform = transform
         self.cell_transform = cell_transform
+
+        import numpy as np
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+class Model(object):
+
+    def evaluate_sentiment(self, X_test, y_test):
+        """
+        Evaluate the sentiment analysis performance on test data.
+        
+        Args:
+            X_test (list): List of preprocessed text samples.
+            y_test (list): List of corresponding sentiment labels.
+        
+        Returns:
+            dict: Dictionary containing sentiment analysis metrics.
+        """
+        y_pred = self.predict_sentiment(X_test)
+        
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='weighted')
+        recall = recall_score(y_test, y_pred, average='weighted')
+        f1 = f1_score(y_test, y_pred, average='weighted')
+        
+        metrics = {
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1
+        }
+        
+        return metrics
+
+    def predict_sentiment(self, X):
+        """
+        Perform sentiment analysis prediction on input text samples.
+        
+        Args:
+            X (list): List of preprocessed text samples.
+        
+        Returns:
+            list: List of predicted sentiment labels.
+        """
+        features = self.transform(X)
+        # Perform your sentiment analysis prediction based on the extracted features
+        # Replace this line with your sentiment analysis code
+        y_pred = np.random.choice(['positive', 'negative'], size=len(X))
+        
+        return y_pred
+
+# Example usage:
+mdl = Model()
+X_test = ['I love this product!', 'This is terrible.']
+y_test = ['positive', 'negative']
+
+metrics = mdl.evaluate_sentiment(X_test, y_test)
+print(metrics)
+
 
 
 if __name__ == '__main__':
